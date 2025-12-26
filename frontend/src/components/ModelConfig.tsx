@@ -70,6 +70,7 @@ const PRESETS = [
       refiner_model: 'google/gemini-3-flash-preview',
       temperature: 1.0,
       max_iterations: 3,
+      output_length: 'short' as const,
     },
   },
   {
@@ -84,6 +85,7 @@ const PRESETS = [
       refiner_model: 'google/gemini-3-pro-preview',
       temperature: 1.0,
       max_iterations: 5,
+      output_length: 'medium' as const,
     },
   },
   {
@@ -98,6 +100,7 @@ const PRESETS = [
       refiner_model: 'google/gemini-3-pro-preview',
       temperature: 1.0,
       max_iterations: 6,
+      output_length: 'long' as const,
     },
   },
   {
@@ -112,6 +115,7 @@ const PRESETS = [
       refiner_model: 'google/gemini-2.5-pro',
       temperature: 1.0,
       max_iterations: 5,
+      output_length: 'medium' as const,
     },
   },
 ];
@@ -492,6 +496,30 @@ export function ModelConfig() {
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
             />
+          </div>
+
+          {/* Output Length */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Output Length per Turn</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['short', 'medium', 'long'] as const).map((length) => (
+                <button
+                  key={length}
+                  onClick={() => { setActivePreset(null); setConfig({ output_length: length }); }}
+                  disabled={isDisabled}
+                  className={`
+                    px-3 py-2 rounded-lg border text-sm font-medium transition-all
+                    ${config.output_length === length
+                      ? 'bg-amber/10 border-amber/30 text-amber'
+                      : 'bg-background-tertiary/50 border-border-subtle text-text-secondary hover:border-border-medium'}
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  {length.charAt(0).toUpperCase() + length.slice(1)}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-text-ghost mt-1">Short: ~500 words, Medium: ~2000 words, Long: unlimited</p>
           </div>
 
           {/* Sliders */}

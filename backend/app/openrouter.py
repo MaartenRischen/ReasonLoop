@@ -4,6 +4,7 @@ import httpx
 import json
 from typing import AsyncGenerator, Optional, List, Any
 import logging
+from .providers import track_usage, estimate_cost, get_provider_for_model
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,7 @@ class OpenRouterClient:
 
         logger.info(f"Starting stream for model {model} with max_tokens={max_tokens}")
         token_count = 0
+        input_tokens = len(prompt) // 4  # Rough estimate
 
         async with httpx.AsyncClient(timeout=600.0) as client:  # 10 min timeout for long generations
             async with client.stream(
@@ -127,6 +129,14 @@ class OpenRouterClient:
                         data = line[6:]
                         if data == "[DONE]":
                             logger.info(f"Stream completed for model {model}, ~{token_count} tokens generated")
+                            # Track usage
+                            try:
+                                provider = get_provider_for_model(model)
+                                cost = estimate_cost(model, input_tokens, token_count * 4)  # Convert word count back to tokens
+                                track_usage(provider, model, input_tokens, token_count * 4, cost)
+                                logger.info(f"Tracked usage: {input_tokens} input, {token_count * 4} output tokens, ${cost:.4f}")
+                            except Exception as e:
+                                logger.warning(f"Failed to track usage: {e}")
                             break
                         try:
                             chunk = json.loads(data)

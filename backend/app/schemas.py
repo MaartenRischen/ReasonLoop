@@ -15,6 +15,15 @@ class ReasoningConfig(BaseModel):
     score_threshold: float = Field(default=8.0, ge=1, le=10)
     improvement_delta: float = Field(default=0.5, ge=0, le=5)
     criteria: Optional[str] = None  # Custom evaluation criteria
+    output_length: Literal["short", "medium", "long"] = "long"  # Controls max output per turn
+
+
+# Map output_length to max_tokens for generation
+OUTPUT_LENGTH_TOKENS = {
+    "short": 2000,   # Brief, focused responses
+    "medium": 8000,  # Balanced responses
+    "long": 32000,   # Full detailed responses
+}
 
 
 class ContextFile(BaseModel):

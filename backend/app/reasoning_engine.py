@@ -10,7 +10,8 @@ from .schemas import (
     ReasoningEvent,
     CritiqueResult,
     Iteration,
-    Session
+    Session,
+    OUTPUT_LENGTH_TOKENS
 )
 from .prompts import (
     build_initial_prompt,
@@ -223,11 +224,13 @@ async def reasoning_loop(
         generation = ""
         # Only include files in the first iteration (they provide initial context)
         files_for_prompt = session.context_files if iteration == 0 else None
+        # Use output_length setting to determine max tokens
+        gen_max_tokens = OUTPUT_LENGTH_TOKENS.get(config.output_length, config.max_tokens)
         async for chunk in client.stream_completion(
             prompt=prompt,
             model=current_generator,  # Use rotated generator
             temperature=config.temperature,
-            max_tokens=config.max_tokens,
+            max_tokens=gen_max_tokens,
             context_files=files_for_prompt
         ):
             generation += chunk
