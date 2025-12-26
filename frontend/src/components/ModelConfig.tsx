@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Zap, Scale, Sparkles, DollarSign, Loader2, Search, Star, Wand2, Brain, Settings2 } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
+import { API_BASE } from '../lib/api';
 
 interface TaskAnalysisResponse {
   task_type: string;
@@ -282,7 +283,7 @@ export function ModelConfig() {
     if (!taskText.trim() || taskText.length < 10) return;
     setIsAnalyzing(true);
     try {
-      const response = await fetch('http://localhost:8000/api/analyze-task', {
+      const response = await fetch(`${API_BASE}/analyze-task`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task: taskText, has_vision_content: hasVision })
@@ -330,7 +331,7 @@ export function ModelConfig() {
     const fetchModels = async () => {
       setIsLoadingModels(true);
       try {
-        const response = await fetch('http://localhost:8000/api/models');
+        const response = await fetch(`${API_BASE}/models`);
         const data = await response.json();
         if (data.models?.length > 0) setModels(data.models);
       } catch (err) {

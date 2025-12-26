@@ -13,6 +13,7 @@ import {
   Brain,
   TrendingUp
 } from 'lucide-react';
+import { API_BASE } from '../lib/api';
 
 interface LeaderboardModel {
   id: string;
@@ -199,7 +200,7 @@ export function ModelLeaderboard() {
     setUpdateResult(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/leaderboard/update', {
+      const response = await fetch(`${API_BASE}/leaderboard/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

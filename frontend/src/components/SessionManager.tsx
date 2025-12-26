@@ -15,6 +15,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
+import { API_BASE } from '../lib/api';
 
 interface SessionSummary {
   id: string;
@@ -49,7 +50,7 @@ export function SessionManager() {
   const fetchSessions = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/sessions');
+      const response = await fetch(`${API_BASE}/sessions`);
       const data = await response.json();
       setSessions(data.sessions || []);
     } catch (err) {
@@ -68,7 +69,7 @@ export function SessionManager() {
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`http://localhost:8000/api/sessions/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/sessions/${id}`, { method: 'DELETE' });
       setSessions(sessions.filter(s => s.id !== id));
     } catch (err) {
       console.error('Failed to delete session:', err);
@@ -79,7 +80,7 @@ export function SessionManager() {
     if (id === sessionId) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/api/reasoning/${id}`);
+      const response = await fetch(`${API_BASE}/reasoning/${id}`);
       if (!response.ok) throw new Error('Failed to load session');
 
       const session = await response.json();

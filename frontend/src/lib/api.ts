@@ -1,5 +1,10 @@
-const API_BASE = 'http://localhost:8000/api';
-const WS_BASE = 'ws://localhost:8000/ws';
+const PROD_API = 'https://reasonloop-production.up.railway.app';
+const DEV_API = 'http://localhost:8000';
+const isProd = import.meta.env.PROD || window.location.hostname !== 'localhost';
+const BASE_URL = isProd ? PROD_API : DEV_API;
+
+export const API_BASE = `${BASE_URL}/api`;
+export const WS_BASE = `${isProd ? 'wss' : 'ws'}://${isProd ? 'reasonloop-production.up.railway.app' : 'localhost:8000'}/ws`;
 
 export interface ReasoningConfig {
   generator_model?: string;
