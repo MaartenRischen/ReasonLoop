@@ -107,7 +107,10 @@ class OpenRouterClient:
             "stream": True
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        logger.info(f"Starting stream for model {model} with max_tokens={max_tokens}")
+        token_count = 0
+
+        async with httpx.AsyncClient(timeout=600.0) as client:  # 10 min timeout for long generations
             async with client.stream(
                 "POST",
                 OPENROUTER_API_URL,
@@ -123,7 +126,7 @@ class OpenRouterClient:
                     if line.startswith("data: "):
                         data = line[6:]
                         if data == "[DONE]":
-                            logger.info(f"Stream completed for model {model}")
+                            logger.info(f"Stream completed for model {model}, ~{token_count} tokens generated")
                             break
                         try:
                             chunk = json.loads(data)
@@ -135,13 +138,18 @@ class OpenRouterClient:
                                 # Log finish reason if present
                                 finish_reason = choice.get("finish_reason")
                                 if finish_reason:
-                                    logger.warning(f"Stream finish_reason: {finish_reason} for model {model}")
+                                    logger.warning(f"Stream finish_reason: {finish_reason} for model {model} after ~{token_count} tokens")
                                     if finish_reason == "length":
-                                        logger.error(f"Model {model} hit max_tokens limit!")
+                                        logger.error(f"MODEL {model} HIT MAX_TOKENS LIMIT after ~{token_count} tokens!")
 
                                 if content:
+                                    token_count += len(content.split())  # Rough token estimate
                                     yield content
-                        except json.JSONDecodeError:
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"JSON decode error: {e} for data: {data[:100]}")
+                            continue
+                        except Exception as e:
+                            logger.error(f"Error processing chunk: {e}")
                             continue
 
     async def complete(
