@@ -91,11 +91,19 @@ export interface ReasoningState {
   reset: () => void;
 }
 
+// Helper to get rotated models for an iteration (must match backend logic)
+function getRotatedModels(config: ReasoningConfig, iteration: number): { generator: string; critic: string } {
+  const models = [config.generator_model, config.critic_model, config.refiner_model];
+  const genIdx = iteration % 3;
+  const criticIdx = (iteration + 1) % 3;
+  return { generator: models[genIdx], critic: models[criticIdx] };
+}
+
 const defaultConfig: ReasoningConfig = {
   generator_model: 'anthropic/claude-3.7-sonnet',  // Will be overridden by Auto mode
   critic_model: 'openai/o3',
   refiner_model: 'anthropic/claude-opus-4.5',
-  temperature: 0.7,
+  temperature: 0.5,
   max_tokens: 16000,
   max_iterations: 5,
   score_threshold: 8.0,
@@ -131,14 +139,18 @@ export const useReasoningStore = create<ReasoningState>((set, get) => ({
 
   startGeneration: (iteration) => {
     const iterations = [...get().iterations];
+    const config = get().config;
+    // Get rotated models for this iteration
+    const rotated = getRotatedModels(config, iteration);
+
     // Ensure we have an iteration object
     if (!iterations[iteration]) {
       iterations[iteration] = {
         number: iteration,
         generation: '',
-        generation_model: get().config.generator_model,
+        generation_model: rotated.generator,  // Use rotated generator
         critique: null,
-        critique_model: get().config.critic_model,
+        critique_model: rotated.critic,  // Use rotated critic
         isGenerating: true,
         isCritiquing: false,
       };

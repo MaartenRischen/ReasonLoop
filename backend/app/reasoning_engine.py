@@ -102,6 +102,25 @@ def parse_critique(critique_text: str) -> CritiqueResult:
     return result
 
 
+def get_rotated_models(config: ReasoningConfig, iteration: int) -> tuple[str, str]:
+    """
+    Rotate models across iterations so each model plays different roles.
+
+    The three models (generator, critic, refiner) rotate positions:
+    - Iteration 0: generator_model generates, critic_model critiques
+    - Iteration 1: critic_model generates, refiner_model critiques
+    - Iteration 2: refiner_model generates, generator_model critiques
+    - Iteration 3+: cycles back
+
+    This ensures each model plays every role at least once over 3 iterations.
+    """
+    models = [config.generator_model, config.critic_model, config.refiner_model]
+    # Rotate: generator shifts forward, critic is always the next one
+    gen_idx = iteration % 3
+    critic_idx = (iteration + 1) % 3
+    return models[gen_idx], models[critic_idx]
+
+
 def should_terminate(
     score: float,
     history: list[dict],
@@ -110,21 +129,15 @@ def should_terminate(
     """
     Determine if the reasoning loop should terminate.
     Returns (should_stop, reason).
+
+    IMPORTANT: We ONLY stop when the score threshold is reached.
+    The loop should keep iterating until it hits the threshold or max_iterations.
     """
-    # Check score threshold - this is the primary success condition
+    # Check score threshold - this is the ONLY success condition
     if score >= config.score_threshold:
         return True, f"Score threshold reached ({score:.1f} >= {config.score_threshold})"
 
-    # Only consider insufficient improvement if we're reasonably close to the threshold
-    # (within 2 points) - otherwise keep trying even with small improvements
-    min_score_for_early_stop = config.score_threshold - 2.0
-
-    if len(history) >= 2 and score >= min_score_for_early_stop:
-        prev_score = history[-2].get("score", 0)
-        improvement = score - prev_score
-        if improvement < config.improvement_delta:
-            return True, f"Insufficient improvement ({improvement:.2f} < {config.improvement_delta}) at score {score:.1f}"
-
+    # Never stop early - keep iterating until threshold or max_iterations
     return False, ""
 
 
@@ -181,6 +194,10 @@ async def reasoning_loop(
         if injected_feedback:
             feedback = injected_feedback()
 
+        # Get rotated models for this iteration
+        current_generator, current_critic = get_rotated_models(config, iteration)
+        logger.info(f"Iteration {iteration}: Generator={current_generator}, Critic={current_critic}")
+
         # GENERATE
         yield await emit(ReasoningEvent(
             type="generation_start",
@@ -208,7 +225,7 @@ async def reasoning_loop(
         files_for_prompt = session.context_files if iteration == 0 else None
         async for chunk in client.stream_completion(
             prompt=prompt,
-            model=config.generator_model,
+            model=current_generator,  # Use rotated generator
             temperature=config.temperature,
             max_tokens=config.max_tokens,
             context_files=files_for_prompt
@@ -244,7 +261,7 @@ async def reasoning_loop(
         critique_text = ""
         async for chunk in client.stream_completion(
             prompt=critique_prompt,
-            model=config.critic_model,
+            model=current_critic,  # Use rotated critic
             temperature=0.3,  # Lower temperature for more consistent critique
             max_tokens=2000
         ):
@@ -266,13 +283,13 @@ async def reasoning_loop(
             critique=critique
         ))
 
-        # Create iteration record
+        # Create iteration record with the actual rotated models used
         iter_record = Iteration(
             number=iteration,
             generation=generation,
-            generation_model=config.generator_model,
+            generation_model=current_generator,  # Actual model used
             critique=critique,
-            critique_model=config.critic_model
+            critique_model=current_critic  # Actual model used
         )
         session.iterations.append(iter_record)
 
