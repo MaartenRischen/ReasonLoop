@@ -30,44 +30,60 @@ def parse_critique(critique_text: str) -> CritiqueResult:
     """Parse the structured critique response from the critic model."""
     result = CritiqueResult(raw_critique=critique_text)
 
-    # Extract strengths
-    strengths_match = re.search(
-        r'STRENGTHS?:\s*\n((?:[-•*]\s*.+\n?)+)',
-        critique_text,
-        re.IGNORECASE
-    )
-    if strengths_match:
-        result.strengths = [
-            line.strip().lstrip('-•* ')
-            for line in strengths_match.group(1).strip().split('\n')
-            if line.strip()
-        ]
+    def extract_section(text: str, section_name: str) -> str:
+        """Extract content between a section header and the next section or end."""
+        # Match section header and capture everything until next section or end
+        pattern = rf'{section_name}S?:\s*\n(.*?)(?=\n(?:STRENGTHS?|WEAKNESSES?|SUGGESTIONS?|SCORE):|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        return match.group(1).strip() if match else ""
 
-    # Extract weaknesses
-    weaknesses_match = re.search(
-        r'WEAKNESSES?:\s*\n((?:[-•*]\s*.+\n?)+)',
-        critique_text,
-        re.IGNORECASE
-    )
-    if weaknesses_match:
-        result.weaknesses = [
-            line.strip().lstrip('-•* ')
-            for line in weaknesses_match.group(1).strip().split('\n')
-            if line.strip()
-        ]
+    def parse_bullet_points(section_text: str) -> list[str]:
+        """Parse bullet points from section text, handling multi-line items."""
+        if not section_text:
+            return []
 
-    # Extract suggestions
-    suggestions_match = re.search(
-        r'SUGGESTIONS?:\s*\n((?:[-•*]\s*.+\n?)+)',
-        critique_text,
-        re.IGNORECASE
-    )
-    if suggestions_match:
-        result.suggestions = [
-            line.strip().lstrip('-•* ')
-            for line in suggestions_match.group(1).strip().split('\n')
-            if line.strip()
-        ]
+        items = []
+        current_item = []
+
+        for line in section_text.split('\n'):
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            # Check if this line starts a new bullet point
+            # Only treat single - or • at start as bullet, not ** (markdown bold)
+            is_new_bullet = (
+                (stripped.startswith('- ') or stripped.startswith('• ')) or
+                (stripped.startswith('* ') and not stripped.startswith('**'))
+            )
+
+            if is_new_bullet:
+                # Save previous item if exists
+                if current_item:
+                    items.append(' '.join(current_item))
+                # Start new item, removing the bullet marker
+                current_item = [stripped.lstrip('-•* ').strip()]
+            elif current_item:
+                # Continuation of previous bullet point
+                current_item.append(stripped)
+            else:
+                # Line without bullet at start - treat as standalone item
+                items.append(stripped)
+
+        # Don't forget the last item
+        if current_item:
+            items.append(' '.join(current_item))
+
+        return items
+
+    # Extract each section
+    strengths_text = extract_section(critique_text, "STRENGTH")
+    weaknesses_text = extract_section(critique_text, "WEAKNESS")
+    suggestions_text = extract_section(critique_text, "SUGGESTION")
+
+    result.strengths = parse_bullet_points(strengths_text)
+    result.weaknesses = parse_bullet_points(weaknesses_text)
+    result.suggestions = parse_bullet_points(suggestions_text)
 
     # Extract score - try multiple patterns
     score = None
