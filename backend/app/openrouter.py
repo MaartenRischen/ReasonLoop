@@ -52,12 +52,14 @@ def build_multimodal_content(text: str, context_files: Optional[List[Any]] = Non
 
     return content_parts
 
+import os
+
 # OpenRouter API endpoints
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
-# Hardcoded API key (as requested)
-OPENROUTER_API_KEY = "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"
+# Load API key from environment variable first, fallback to hardcoded
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
 
 # Cache for models
 _models_cache: Optional[list[dict]] = None

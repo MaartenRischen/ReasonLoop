@@ -20,14 +20,33 @@ DATA_DIR.mkdir(exist_ok=True)
 
 
 def load_api_keys() -> Dict[str, str]:
-    """Load API keys from file."""
+    """Load API keys from file, with environment variables as fallback."""
+    keys = {}
+
+    # First, load from file if exists
     if KEYS_FILE.exists():
         try:
             with open(KEYS_FILE, "r") as f:
-                return json.load(f)
+                keys = json.load(f)
         except Exception as e:
             logger.error(f"Failed to load API keys: {e}")
-    return {}
+
+    # Then, check environment variables for any missing keys
+    env_mappings = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "google": "GOOGLE_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY"
+    }
+
+    for provider, env_var in env_mappings.items():
+        if not keys.get(provider):
+            env_key = os.environ.get(env_var)
+            if env_key:
+                keys[provider] = env_key
+                logger.info(f"Loaded {provider} API key from environment variable")
+
+    return keys
 
 
 def save_api_keys(keys: Dict[str, str]):
