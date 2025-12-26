@@ -68,7 +68,7 @@ const PRESETS = [
       generator_model: 'google/gemini-3-flash-preview',
       critic_model: 'google/gemini-3-flash-preview',
       refiner_model: 'google/gemini-3-flash-preview',
-      temperature: 0.7,
+      temperature: 1.0,
       max_iterations: 3,
     },
   },
@@ -82,7 +82,7 @@ const PRESETS = [
       generator_model: 'anthropic/claude-sonnet-4.5',
       critic_model: 'openai/gpt-5.2',
       refiner_model: 'google/gemini-3-pro-preview',
-      temperature: 0.7,
+      temperature: 1.0,
       max_iterations: 5,
     },
   },
@@ -96,7 +96,7 @@ const PRESETS = [
       generator_model: 'x-ai/grok-4',
       critic_model: 'anthropic/claude-opus-4.5',
       refiner_model: 'google/gemini-3-pro-preview',
-      temperature: 0.5,
+      temperature: 1.0,
       max_iterations: 6,
     },
   },
@@ -110,7 +110,7 @@ const PRESETS = [
       generator_model: 'google/gemini-2.5-pro',
       critic_model: 'google/gemini-2.5-pro',
       refiner_model: 'google/gemini-2.5-pro',
-      temperature: 0.7,
+      temperature: 1.0,
       max_iterations: 5,
     },
   },
@@ -455,8 +455,9 @@ export function ModelConfig() {
 
           {/* Model Selects */}
           <div className="space-y-4">
+            <p className="text-[10px] text-text-muted -mb-2">These 3 models rotate roles each iteration</p>
             <ModelSelect
-              label="Generator"
+              label="Model A"
               value={config.generator_model}
               onChange={(v) => handleModelChange('generator_model', v)}
               disabled={isDisabled}
@@ -468,7 +469,7 @@ export function ModelConfig() {
               onToggleFavorite={handleToggleFavorite}
             />
             <ModelSelect
-              label="Critic"
+              label="Model B"
               value={config.critic_model}
               onChange={(v) => handleModelChange('critic_model', v)}
               disabled={isDisabled}
@@ -480,7 +481,7 @@ export function ModelConfig() {
               onToggleFavorite={handleToggleFavorite}
             />
             <ModelSelect
-              label="Refiner"
+              label="Model C"
               value={config.refiner_model}
               onChange={(v) => handleModelChange('refiner_model', v)}
               disabled={isDisabled}
@@ -503,16 +504,16 @@ export function ModelConfig() {
               <input
                 type="range"
                 min="0"
-                max="1"
-                step="0.05"
+                max="2"
+                step="0.1"
                 value={config.temperature}
                 onChange={(e) => { setActivePreset(null); setConfig({ temperature: parseFloat(e.target.value) }); }}
                 disabled={isDisabled}
                 className="w-full"
               />
               <div className="flex justify-between text-[10px] text-text-ghost mt-1">
-                <span>Precise</span>
-                <span>Creative</span>
+                <span>0 (Precise)</span>
+                <span>2 (Wild)</span>
               </div>
             </div>
 

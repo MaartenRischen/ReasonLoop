@@ -9,7 +9,7 @@ class ReasoningConfig(BaseModel):
     generator_model: str = "anthropic/claude-3.5-sonnet"
     critic_model: str = "anthropic/claude-3.5-sonnet"
     refiner_model: str = "anthropic/claude-3.5-sonnet"
-    temperature: float = Field(default=0.5, ge=0, le=1)
+    temperature: float = Field(default=1.0, ge=0, le=2)
     max_tokens: int = Field(default=16000, ge=100, le=32000)
     max_iterations: int = Field(default=5, ge=1, le=20)
     score_threshold: float = Field(default=8.0, ge=1, le=10)

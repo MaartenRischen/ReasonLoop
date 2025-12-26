@@ -103,7 +103,7 @@ const defaultConfig: ReasoningConfig = {
   generator_model: 'anthropic/claude-3.7-sonnet',  // Will be overridden by Auto mode
   critic_model: 'openai/o3',
   refiner_model: 'anthropic/claude-opus-4.5',
-  temperature: 0.5,
+  temperature: 1.0,
   max_tokens: 16000,
   max_iterations: 5,
   score_threshold: 8.0,
