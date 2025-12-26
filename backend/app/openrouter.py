@@ -123,12 +123,22 @@ class OpenRouterClient:
                     if line.startswith("data: "):
                         data = line[6:]
                         if data == "[DONE]":
+                            logger.info(f"Stream completed for model {model}")
                             break
                         try:
                             chunk = json.loads(data)
                             if "choices" in chunk and len(chunk["choices"]) > 0:
-                                delta = chunk["choices"][0].get("delta", {})
+                                choice = chunk["choices"][0]
+                                delta = choice.get("delta", {})
                                 content = delta.get("content", "")
+
+                                # Log finish reason if present
+                                finish_reason = choice.get("finish_reason")
+                                if finish_reason:
+                                    logger.warning(f"Stream finish_reason: {finish_reason} for model {model}")
+                                    if finish_reason == "length":
+                                        logger.error(f"Model {model} hit max_tokens limit!")
+
                                 if content:
                                     yield content
                         except json.JSONDecodeError:

@@ -6,10 +6,10 @@ TASK: {task}
 
 {context_section}
 
-Provide a thorough, well-reasoned response."""
+Provide a thorough but focused response. Be comprehensive without being unnecessarily verbose - aim for quality over quantity. Structure your response clearly."""
 
 
-GENERATOR_REFINEMENT_PROMPT = """You are refining a response based on critique.
+GENERATOR_REFINEMENT_PROMPT = """You are refining a response based on critique. Your job is to produce a SIGNIFICANTLY IMPROVED version.
 
 ORIGINAL TASK: {task}
 
@@ -18,10 +18,19 @@ ORIGINAL TASK: {task}
 PREVIOUS RESPONSE:
 {previous_response}
 
-CRITIQUE:
+CRITIQUE OF THE ABOVE:
 {critique}
 
-Produce an improved version that addresses the weaknesses while maintaining the strengths. Do not mention the critique or that this is a revision — just produce the better version."""
+CRITICAL INSTRUCTIONS:
+1. You MUST address every weakness mentioned in the critique
+2. You MUST incorporate the suggestions where applicable
+3. Your response should be NOTICEABLY DIFFERENT and BETTER than the previous one
+4. If the critique says something is missing, ADD it
+5. If the critique says something is weak, STRENGTHEN it
+6. If the critique says something is unclear, CLARIFY it
+7. Do NOT just rephrase - make substantive improvements
+
+Produce the improved version now. Do not mention the critique or that this is a revision."""
 
 
 CRITIC_PROMPT = """You are a ruthless but intellectually honest critic. Your job is to find REAL problems, not to praise.

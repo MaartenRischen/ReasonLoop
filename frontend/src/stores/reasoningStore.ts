@@ -96,7 +96,7 @@ const defaultConfig: ReasoningConfig = {
   critic_model: 'openai/o3',
   refiner_model: 'anthropic/claude-opus-4.5',
   temperature: 0.7,
-  max_tokens: 4096,
+  max_tokens: 16000,
   max_iterations: 5,
   score_threshold: 8.0,
 };

@@ -111,16 +111,19 @@ def should_terminate(
     Determine if the reasoning loop should terminate.
     Returns (should_stop, reason).
     """
-    # Check score threshold
+    # Check score threshold - this is the primary success condition
     if score >= config.score_threshold:
         return True, f"Score threshold reached ({score:.1f} >= {config.score_threshold})"
 
-    # Check improvement delta (if we have history)
-    if len(history) >= 2:
+    # Only consider insufficient improvement if we're reasonably close to the threshold
+    # (within 2 points) - otherwise keep trying even with small improvements
+    min_score_for_early_stop = config.score_threshold - 2.0
+
+    if len(history) >= 2 and score >= min_score_for_early_stop:
         prev_score = history[-2].get("score", 0)
         improvement = score - prev_score
         if improvement < config.improvement_delta:
-            return True, f"Insufficient improvement ({improvement:.2f} < {config.improvement_delta})"
+            return True, f"Insufficient improvement ({improvement:.2f} < {config.improvement_delta}) at score {score:.1f}"
 
     return False, ""
 

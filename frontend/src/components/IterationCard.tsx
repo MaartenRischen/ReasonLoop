@@ -1,6 +1,19 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Loader2, Check, AlertTriangle, Lightbulb, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Check, AlertTriangle, Lightbulb, Sparkles, Bot } from 'lucide-react';
 import type { Iteration } from '../stores/reasoningStore';
+
+// Helper to format model name for display
+function formatModelName(modelId: string): string {
+  if (!modelId) return 'Unknown';
+  // Extract just the model name part (after the provider/)
+  const parts = modelId.split('/');
+  const name = parts.length > 1 ? parts[1] : modelId;
+  // Capitalize and clean up
+  return name
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/(\d+)\.(\d+)/g, '$1.$2'); // Keep version numbers intact
+}
 
 interface IterationCardProps {
   iteration: Iteration;
@@ -102,6 +115,12 @@ export function IterationCard({ iteration, isLatest }: IterationCardProps) {
             <span className="text-sm font-medium text-text-secondary group-hover:text-text-primary transition-colors">
               Generation
             </span>
+            {iteration.generation_model && (
+              <span className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md bg-amber/10 border border-amber/20">
+                <Bot className="w-3 h-3 text-amber" />
+                <span className="text-[10px] font-medium text-amber">{formatModelName(iteration.generation_model)}</span>
+              </span>
+            )}
             {iteration.generation && !iteration.isGenerating && (
               <Check className="w-4 h-4 text-teal ml-auto" />
             )}
@@ -156,6 +175,12 @@ export function IterationCard({ iteration, isLatest }: IterationCardProps) {
               <span className="text-sm font-medium text-text-secondary group-hover:text-text-primary transition-colors">
                 Critique & Analysis
               </span>
+              {iteration.critique_model && (
+                <span className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md bg-violet/10 border border-violet/20">
+                  <Bot className="w-3 h-3 text-violet" />
+                  <span className="text-[10px] font-medium text-violet">{formatModelName(iteration.critique_model)}</span>
+                </span>
+              )}
               {iteration.critique && !iteration.isCritiquing && (
                 <Check className="w-4 h-4 text-teal ml-auto" />
               )}

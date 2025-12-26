@@ -10,7 +10,7 @@ class ReasoningConfig(BaseModel):
     critic_model: str = "anthropic/claude-3.5-sonnet"
     refiner_model: str = "anthropic/claude-3.5-sonnet"
     temperature: float = Field(default=0.7, ge=0, le=1)
-    max_tokens: int = Field(default=4096, ge=100, le=32000)
+    max_tokens: int = Field(default=16000, ge=100, le=32000)
     max_iterations: int = Field(default=5, ge=1, le=20)
     score_threshold: float = Field(default=8.0, ge=1, le=10)
     improvement_delta: float = Field(default=0.5, ge=0, le=5)
