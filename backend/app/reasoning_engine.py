@@ -217,7 +217,7 @@ async def reasoning_loop(
             content_to_analyze = session.context or ""
 
             if iteration == 0:
-                prompt = build_critique_only_initial(session.task, None, content_to_analyze)
+                prompt = build_critique_only_initial(session.task, None, content_to_analyze, config.output_length)
             else:
                 # Use previous critique to get different angle
                 previous_critique = history[-1]["generation"] if history else ""
@@ -225,7 +225,8 @@ async def reasoning_loop(
                     session.task,
                     None,
                     content_to_analyze,
-                    previous_critique
+                    previous_critique,
+                    config.output_length
                 )
 
             generation = ""
@@ -280,7 +281,7 @@ async def reasoning_loop(
             ))
 
             if iteration == 0:
-                prompt = build_initial_prompt(session.task, session.context)
+                prompt = build_initial_prompt(session.task, session.context, config.output_length)
             else:
                 # Use feedback if injected, otherwise use critique
                 if feedback:
@@ -291,7 +292,8 @@ async def reasoning_loop(
                     session.task,
                     session.context,
                     current_output,
-                    critique_text
+                    critique_text,
+                    config.output_length
                 )
 
             generation = ""

@@ -1,12 +1,21 @@
 """Prompt templates for the reasoning engine."""
 
+# Length instructions based on output_length setting
+LENGTH_INSTRUCTIONS = {
+    "short": "IMPORTANT: Keep your response BRIEF and CONCISE. Aim for ~500 words maximum. Be direct, skip preamble, focus only on the most essential points.",
+    "medium": "Keep your response focused and well-structured. Aim for ~1500-2000 words. Cover key points thoroughly but avoid unnecessary elaboration.",
+    "long": "Provide a comprehensive, detailed response. Be thorough and explore the topic fully."
+}
+
 GENERATOR_INITIAL_PROMPT = """You are solving a complex task. Think carefully and provide your best response.
 
 TASK: {task}
 
 {context_section}
 
-Provide a thorough but focused response. Be comprehensive without being unnecessarily verbose - aim for quality over quantity. Structure your response clearly."""
+{length_instruction}
+
+Provide a focused response. Structure your response clearly."""
 
 
 GENERATOR_REFINEMENT_PROMPT = """You are refining a response based on critique. Your job is to produce a SIGNIFICANTLY IMPROVED version.
@@ -20,6 +29,8 @@ PREVIOUS RESPONSE:
 
 CRITIQUE OF THE ABOVE:
 {critique}
+
+{length_instruction}
 
 CRITICAL INSTRUCTIONS:
 1. You MUST address every weakness mentioned in the critique
@@ -76,14 +87,16 @@ TASK: {task}
 CONTENT TO ANALYZE:
 {content}
 
-Provide deep, thoughtful analysis and critique. Focus on:
+{length_instruction}
+
+Provide analysis and critique. Focus on:
 - Strengths and what works well
 - Weaknesses and areas for improvement
 - Specific, actionable suggestions
 - Logical gaps or inconsistencies
 - Missing perspectives or considerations
 
-Be thorough and intellectually honest. Do NOT rewrite or recreate the content - only analyze it."""
+Be intellectually honest. Do NOT rewrite or recreate the content - only analyze it."""
 
 
 CRITIQUE_ONLY_FOLLOWUP_PROMPT = """You are providing additional analysis from a different angle. Previous critiques have already covered some ground.
@@ -98,12 +111,13 @@ CONTENT BEING ANALYZED:
 PREVIOUS CRITIQUE:
 {previous_critique}
 
-Now provide ADDITIONAL analysis that wasn't covered before. Look for:
+{length_instruction}
+
+Provide ADDITIONAL analysis not yet covered. Look for:
 - Deeper implications or consequences
 - Alternative perspectives not yet considered
 - Subtle issues that might have been missed
 - Second-order effects or considerations
-- Practical implementation challenges
 
 Do NOT repeat points already made. Do NOT rewrite the content. Provide fresh analytical insights."""
 
@@ -126,25 +140,33 @@ The user rejected this output without explanation. Your job is to produce a sign
 Produce the better version directly. Do not mention that this is a revision."""
 
 
-def build_initial_prompt(task: str, context: str | None) -> str:
+def build_initial_prompt(task: str, context: str | None, output_length: str = "long") -> str:
     """Build the initial generator prompt."""
     context_section = f"CONTEXT:\n{context}" if context else ""
-    return GENERATOR_INITIAL_PROMPT.format(task=task, context_section=context_section)
+    length_instruction = LENGTH_INSTRUCTIONS.get(output_length, LENGTH_INSTRUCTIONS["long"])
+    return GENERATOR_INITIAL_PROMPT.format(
+        task=task,
+        context_section=context_section,
+        length_instruction=length_instruction
+    )
 
 
 def build_refinement_prompt(
     task: str,
     context: str | None,
     previous_response: str,
-    critique: str
+    critique: str,
+    output_length: str = "long"
 ) -> str:
     """Build the refinement prompt with critique."""
     context_section = f"CONTEXT:\n{context}" if context else ""
+    length_instruction = LENGTH_INSTRUCTIONS.get(output_length, LENGTH_INSTRUCTIONS["long"])
     return GENERATOR_REFINEMENT_PROMPT.format(
         task=task,
         context_section=context_section,
         previous_response=previous_response,
-        critique=critique
+        critique=critique,
+        length_instruction=length_instruction
     )
 
 
@@ -168,22 +190,26 @@ def build_retry_prompt(task: str, context: str | None, previous_response: str) -
     )
 
 
-def build_critique_only_initial(task: str, context: str | None, content: str) -> str:
+def build_critique_only_initial(task: str, context: str | None, content: str, output_length: str = "long") -> str:
     """Build the initial critique-only prompt."""
     context_section = f"CONTEXT:\n{context}" if context else ""
+    length_instruction = LENGTH_INSTRUCTIONS.get(output_length, LENGTH_INSTRUCTIONS["long"])
     return CRITIQUE_ONLY_INITIAL_PROMPT.format(
         task=task,
         context_section=context_section,
-        content=content
+        content=content,
+        length_instruction=length_instruction
     )
 
 
-def build_critique_only_followup(task: str, context: str | None, content: str, previous_critique: str) -> str:
+def build_critique_only_followup(task: str, context: str | None, content: str, previous_critique: str, output_length: str = "long") -> str:
     """Build a follow-up critique prompt for additional analysis."""
     context_section = f"CONTEXT:\n{context}" if context else ""
+    length_instruction = LENGTH_INSTRUCTIONS.get(output_length, LENGTH_INSTRUCTIONS["long"])
     return CRITIQUE_ONLY_FOLLOWUP_PROMPT.format(
         task=task,
         context_section=context_section,
         content=content,
-        previous_critique=previous_critique
+        previous_critique=previous_critique,
+        length_instruction=length_instruction
     )
