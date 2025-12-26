@@ -23,12 +23,6 @@ export function IterationCard({ iteration, isLatest }: IterationCardProps) {
     return 'score-low';
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-teal';
-    if (score >= 6) return 'text-amber';
-    return 'text-rose';
-  };
-
   return (
     <div
       className={`

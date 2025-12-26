@@ -3,7 +3,6 @@ import {
   Trophy,
   ChevronDown,
   ChevronUp,
-  RefreshCw,
   Loader2,
   Crown,
   Zap,

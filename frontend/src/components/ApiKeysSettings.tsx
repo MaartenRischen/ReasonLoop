@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Key,
-  Trash2,
   Check,
   X,
   Loader2,

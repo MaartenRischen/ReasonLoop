@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   History,
-  Star,
-  StarOff,
   Trash2,
   Download,
   FileJson,
@@ -11,8 +9,7 @@ import {
   ChevronUp,
   Loader2,
   Clock,
-  Layers,
-  ExternalLink
+  Layers
 } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
 import { API_BASE } from '../lib/api';
