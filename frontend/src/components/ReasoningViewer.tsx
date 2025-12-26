@@ -1,9 +1,114 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Check, RotateCcw, Square, Loader2, MessageSquare, Send, X, PenLine, Sparkles, Trophy } from 'lucide-react';
+import { Copy, Check, RotateCcw, Square, Loader2, MessageSquare, Send, X, PenLine, Sparkles, Trophy, Download } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
 import { useReasoningWebSocket } from '../hooks/useWebSocket';
 import { stopReasoning, startReasoning, injectFeedback } from '../lib/api';
 import { IterationCard } from './IterationCard';
+import type { Iteration } from '../stores/reasoningStore';
+
+// Helper to format model name for display
+function formatModelName(modelId: string): string {
+  if (!modelId) return 'Unknown Model';
+  const parts = modelId.split('/');
+  return parts.length > 1 ? `${parts[0].toUpperCase()} ${parts[1]}` : modelId;
+}
+
+// Generate markdown export of the full reasoning process
+function generateMarkdownExport(
+  task: string,
+  context: string,
+  iterations: Iteration[],
+  finalOutput: string | null,
+  finalScore: number | null
+): string {
+  const now = new Date().toISOString();
+  let md = `# ReasonLoop Session Export\n\n`;
+  md += `**Generated:** ${now}\n\n`;
+  md += `---\n\n`;
+
+  // Task
+  md += `## 📋 Task\n\n`;
+  md += `${task}\n\n`;
+
+  // Context (if any)
+  if (context) {
+    md += `## 📝 Context Provided\n\n`;
+    md += `${context}\n\n`;
+  }
+
+  md += `---\n\n`;
+  md += `## 🔄 Reasoning Process\n\n`;
+
+  // Each iteration
+  iterations.forEach((iteration, idx) => {
+    md += `### Iteration ${idx + 1}\n\n`;
+
+    // Generation
+    md += `#### 💡 Generation\n`;
+    md += `**Model:** ${formatModelName(iteration.generation_model)}\n\n`;
+    md += `${iteration.generation}\n\n`;
+
+    // Critique
+    if (iteration.critique) {
+      md += `#### 🔍 Critique & Analysis\n`;
+      md += `**Model:** ${formatModelName(iteration.critique_model)}\n`;
+      md += `**Score:** ${iteration.critique.score.toFixed(1)}/10\n\n`;
+
+      if (iteration.critique.strengths.length > 0) {
+        md += `**Strengths:**\n`;
+        iteration.critique.strengths.forEach(s => {
+          md += `- ${s}\n`;
+        });
+        md += `\n`;
+      }
+
+      if (iteration.critique.weaknesses.length > 0) {
+        md += `**Weaknesses:**\n`;
+        iteration.critique.weaknesses.forEach(w => {
+          md += `- ${w}\n`;
+        });
+        md += `\n`;
+      }
+
+      if (iteration.critique.suggestions.length > 0) {
+        md += `**Suggestions:**\n`;
+        iteration.critique.suggestions.forEach(s => {
+          md += `- ${s}\n`;
+        });
+        md += `\n`;
+      }
+    }
+
+    md += `---\n\n`;
+  });
+
+  // Final Output
+  if (finalOutput) {
+    md += `## 🏆 Final Output\n\n`;
+    if (finalScore !== null) {
+      md += `**Final Score:** ${finalScore.toFixed(1)}/10\n\n`;
+    }
+    md += `${finalOutput}\n\n`;
+  }
+
+  md += `---\n\n`;
+  md += `*Exported from [ReasonLoop](https://github.com/MaartenRischen/ReasonLoop) - AI Reasoning Engine*\n`;
+
+  return md;
+}
+
+// Trigger download of markdown file
+function downloadMarkdown(content: string, filename: string) {
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function ReasoningViewer() {
   const {
@@ -52,6 +157,13 @@ export function ReasoningViewer() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleDownload = () => {
+    const markdown = generateMarkdownExport(task, context, iterations, finalOutput, finalScore);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const taskSlug = task.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+    downloadMarkdown(markdown, `reasonloop-${taskSlug}-${timestamp}.md`);
   };
 
   const handleStop = async () => {
@@ -352,6 +464,13 @@ ${context || 'None provided'}
                     Copy
                   </>
                 )}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet/10 border border-violet/20 text-violet text-sm font-medium hover:bg-violet/15 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export Full Log
               </button>
               <button
                 onClick={handleRetryClick}
