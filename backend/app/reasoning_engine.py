@@ -253,24 +253,22 @@ async def reasoning_loop(
                 content=generation
             ))
 
-            # In critique mode, create a simple critique result (the analysis IS the output)
+            # In critique mode, the generation IS the analysis - no separate critique step
+            # Score gradually increases so we run all iterations (score only hits threshold on final iteration)
+            final_iteration = config.max_iterations - 1
+            if iteration >= final_iteration:
+                critique_score = config.score_threshold  # Allow completion on final iteration
+            else:
+                critique_score = 7.0  # Below threshold to continue iterating
+
             critique = CritiqueResult(
-                score=7.0 + iteration * 0.5,  # Score increases as we add more perspectives
-                strengths=["Analysis provided"],
+                score=critique_score,
+                strengths=[],
                 weaknesses=[],
-                suggestions=["Consider additional perspectives" if iteration < config.max_iterations - 1 else ""],
-                raw_critique=f"Iteration {iteration + 1} analysis complete."
+                suggestions=[],
+                raw_critique=""  # Empty - the generation itself is the critique
             )
-
-            yield await emit(ReasoningEvent(
-                type="critique_complete",
-                session_id=session.id,
-                iteration=iteration,
-                score=critique.score,
-                critique=critique
-            ))
-
-            critique_text = critique.raw_critique
+            # Don't emit critique_complete in critique mode - the generation IS the critique
 
         else:
             # GENERATE MODE: Normal generate-critique-refine loop
