@@ -71,6 +71,7 @@ const PRESETS = [
       temperature: 1.0,
       max_iterations: 3,
       output_length: 'short' as const,
+      mode: 'generate' as const,
     },
   },
   {
@@ -86,6 +87,7 @@ const PRESETS = [
       temperature: 1.0,
       max_iterations: 5,
       output_length: 'medium' as const,
+      mode: 'generate' as const,
     },
   },
   {
@@ -101,6 +103,7 @@ const PRESETS = [
       temperature: 1.0,
       max_iterations: 6,
       output_length: 'long' as const,
+      mode: 'generate' as const,
     },
   },
   {
@@ -116,6 +119,7 @@ const PRESETS = [
       temperature: 1.0,
       max_iterations: 5,
       output_length: 'medium' as const,
+      mode: 'generate' as const,
     },
   },
 ];
@@ -455,6 +459,45 @@ export function ModelConfig() {
                 <p className="text-xs text-text-muted text-center">Enter a task to auto-select the best models</p>
               </div>
             )}
+          </div>
+
+          {/* Mode Selector */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Mode</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setActivePreset(null); setConfig({ mode: 'generate' }); }}
+                disabled={isDisabled}
+                className={`
+                  p-3 rounded-xl border text-left transition-all
+                  ${config.mode === 'generate'
+                    ? 'bg-teal/10 border-teal/30 ring-1 ring-offset-1 ring-offset-background ring-teal/30'
+                    : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                <div className={`text-sm font-semibold ${config.mode === 'generate' ? 'text-teal' : 'text-text-secondary'}`}>
+                  Generate & Refine
+                </div>
+                <p className="text-[10px] text-text-muted mt-1">Create and iteratively improve content</p>
+              </button>
+              <button
+                onClick={() => { setActivePreset(null); setConfig({ mode: 'critique' }); }}
+                disabled={isDisabled}
+                className={`
+                  p-3 rounded-xl border text-left transition-all
+                  ${config.mode === 'critique'
+                    ? 'bg-violet/10 border-violet/30 ring-1 ring-offset-1 ring-offset-background ring-violet/30'
+                    : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                <div className={`text-sm font-semibold ${config.mode === 'critique' ? 'text-violet' : 'text-text-secondary'}`}>
+                  Critique Only
+                </div>
+                <p className="text-[10px] text-text-muted mt-1">Analyze without rewriting</p>
+              </button>
+            </div>
           </div>
 
           {/* Model Selects */}

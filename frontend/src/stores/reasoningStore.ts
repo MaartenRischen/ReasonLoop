@@ -27,6 +27,7 @@ export interface ReasoningConfig {
   max_iterations: number;
   score_threshold: number;
   output_length: 'short' | 'medium' | 'long';
+  mode: 'generate' | 'critique';
 }
 
 export type SessionStatus = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
@@ -109,6 +110,7 @@ const defaultConfig: ReasoningConfig = {
   max_iterations: 5,
   score_threshold: 8.0,
   output_length: 'long',
+  mode: 'generate',
 };
 
 export const useReasoningStore = create<ReasoningState>((set, get) => ({

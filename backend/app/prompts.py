@@ -67,6 +67,47 @@ A 7 should feel generous. 9+ means you genuinely couldn't find meaningful issues
 If the response is actually solid, say so briefly and score it high. Don't manufacture problems. But if there ARE problems, don't soften them."""
 
 
+CRITIQUE_ONLY_INITIAL_PROMPT = """You are a thorough analyst providing detailed critique and feedback. Your job is to ANALYZE the provided content, NOT to rewrite it.
+
+TASK: {task}
+
+{context_section}
+
+CONTENT TO ANALYZE:
+{content}
+
+Provide deep, thoughtful analysis and critique. Focus on:
+- Strengths and what works well
+- Weaknesses and areas for improvement
+- Specific, actionable suggestions
+- Logical gaps or inconsistencies
+- Missing perspectives or considerations
+
+Be thorough and intellectually honest. Do NOT rewrite or recreate the content - only analyze it."""
+
+
+CRITIQUE_ONLY_FOLLOWUP_PROMPT = """You are providing additional analysis from a different angle. Previous critiques have already covered some ground.
+
+ORIGINAL TASK: {task}
+
+{context_section}
+
+CONTENT BEING ANALYZED:
+{content}
+
+PREVIOUS CRITIQUE:
+{previous_critique}
+
+Now provide ADDITIONAL analysis that wasn't covered before. Look for:
+- Deeper implications or consequences
+- Alternative perspectives not yet considered
+- Subtle issues that might have been missed
+- Second-order effects or considerations
+- Practical implementation challenges
+
+Do NOT repeat points already made. Do NOT rewrite the content. Provide fresh analytical insights."""
+
+
 RETRY_PROMPT = """You are refining a response that was rejected by the user.
 
 ORIGINAL TASK: {task}
@@ -124,4 +165,25 @@ def build_retry_prompt(task: str, context: str | None, previous_response: str) -
         task=task,
         context_section=context_section,
         previous_response=previous_response
+    )
+
+
+def build_critique_only_initial(task: str, context: str | None, content: str) -> str:
+    """Build the initial critique-only prompt."""
+    context_section = f"CONTEXT:\n{context}" if context else ""
+    return CRITIQUE_ONLY_INITIAL_PROMPT.format(
+        task=task,
+        context_section=context_section,
+        content=content
+    )
+
+
+def build_critique_only_followup(task: str, context: str | None, content: str, previous_critique: str) -> str:
+    """Build a follow-up critique prompt for additional analysis."""
+    context_section = f"CONTEXT:\n{context}" if context else ""
+    return CRITIQUE_ONLY_FOLLOWUP_PROMPT.format(
+        task=task,
+        context_section=context_section,
+        content=content,
+        previous_critique=previous_critique
     )

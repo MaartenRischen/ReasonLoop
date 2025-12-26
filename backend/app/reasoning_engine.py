@@ -17,7 +17,9 @@ from .prompts import (
     build_initial_prompt,
     build_refinement_prompt,
     build_critic_prompt,
-    build_retry_prompt
+    build_retry_prompt,
+    build_critique_only_initial,
+    build_critique_only_followup
 )
 from .openrouter import get_client
 
@@ -197,94 +199,164 @@ async def reasoning_loop(
 
         # Get rotated models for this iteration
         current_generator, current_critic = get_rotated_models(config, iteration)
-        logger.info(f"Iteration {iteration}: Generator={current_generator}, Critic={current_critic}")
+        logger.info(f"Iteration {iteration}: Generator={current_generator}, Critic={current_critic}, Mode={config.mode}")
 
-        # GENERATE
-        yield await emit(ReasoningEvent(
-            type="generation_start",
-            session_id=session.id,
-            iteration=iteration
-        ))
-
-        if iteration == 0:
-            prompt = build_initial_prompt(session.task, session.context)
-        else:
-            # Use feedback if injected, otherwise use critique
-            if feedback:
-                critique_text = f"Human feedback: {feedback}"
-            else:
-                critique_text = history[-1]["critique"].raw_critique
-            prompt = build_refinement_prompt(
-                session.task,
-                session.context,
-                current_output,
-                critique_text
-            )
-
-        generation = ""
-        # Only include files in the first iteration (they provide initial context)
-        files_for_prompt = session.context_files if iteration == 0 else None
         # Use output_length setting to determine max tokens
         gen_max_tokens = OUTPUT_LENGTH_TOKENS.get(config.output_length, config.max_tokens)
-        async for chunk in client.stream_completion(
-            prompt=prompt,
-            model=current_generator,  # Use rotated generator
-            temperature=config.temperature,
-            max_tokens=gen_max_tokens,
-            context_files=files_for_prompt
-        ):
-            generation += chunk
+
+        if config.mode == "critique":
+            # CRITIQUE-ONLY MODE: Analyze the provided content without rewriting
+            # The "generation" step is actually analysis/critique
             yield await emit(ReasoningEvent(
-                type="generation_chunk",
+                type="generation_start",
                 session_id=session.id,
-                iteration=iteration,
-                content=chunk
+                iteration=iteration
             ))
 
-        yield await emit(ReasoningEvent(
-            type="generation_complete",
-            session_id=session.id,
-            iteration=iteration,
-            content=generation
-        ))
+            # Content to analyze is in the context field
+            content_to_analyze = session.context or ""
 
-        # CRITIQUE
-        yield await emit(ReasoningEvent(
-            type="critique_start",
-            session_id=session.id,
-            iteration=iteration
-        ))
+            if iteration == 0:
+                prompt = build_critique_only_initial(session.task, None, content_to_analyze)
+            else:
+                # Use previous critique to get different angle
+                previous_critique = history[-1]["generation"] if history else ""
+                prompt = build_critique_only_followup(
+                    session.task,
+                    None,
+                    content_to_analyze,
+                    previous_critique
+                )
 
-        critique_prompt = build_critic_prompt(
-            session.task,
-            generation,
-            config.criteria
-        )
+            generation = ""
+            files_for_prompt = session.context_files if iteration == 0 else None
+            async for chunk in client.stream_completion(
+                prompt=prompt,
+                model=current_generator,
+                temperature=config.temperature,
+                max_tokens=gen_max_tokens,
+                context_files=files_for_prompt
+            ):
+                generation += chunk
+                yield await emit(ReasoningEvent(
+                    type="generation_chunk",
+                    session_id=session.id,
+                    iteration=iteration,
+                    content=chunk
+                ))
 
-        critique_text = ""
-        async for chunk in client.stream_completion(
-            prompt=critique_prompt,
-            model=current_critic,  # Use rotated critic
-            temperature=0.3,  # Lower temperature for more consistent critique
-            max_tokens=2000
-        ):
-            critique_text += chunk
             yield await emit(ReasoningEvent(
-                type="critique_chunk",
+                type="generation_complete",
                 session_id=session.id,
                 iteration=iteration,
-                content=chunk
+                content=generation
             ))
 
-        critique = parse_critique(critique_text)
+            # In critique mode, create a simple critique result (the analysis IS the output)
+            critique = CritiqueResult(
+                score=7.0 + iteration * 0.5,  # Score increases as we add more perspectives
+                strengths=["Analysis provided"],
+                weaknesses=[],
+                suggestions=["Consider additional perspectives" if iteration < config.max_iterations - 1 else ""],
+                raw_critique=f"Iteration {iteration + 1} analysis complete."
+            )
 
-        yield await emit(ReasoningEvent(
-            type="critique_complete",
-            session_id=session.id,
-            iteration=iteration,
-            score=critique.score,
-            critique=critique
-        ))
+            yield await emit(ReasoningEvent(
+                type="critique_complete",
+                session_id=session.id,
+                iteration=iteration,
+                score=critique.score,
+                critique=critique
+            ))
+
+            critique_text = critique.raw_critique
+
+        else:
+            # GENERATE MODE: Normal generate-critique-refine loop
+            yield await emit(ReasoningEvent(
+                type="generation_start",
+                session_id=session.id,
+                iteration=iteration
+            ))
+
+            if iteration == 0:
+                prompt = build_initial_prompt(session.task, session.context)
+            else:
+                # Use feedback if injected, otherwise use critique
+                if feedback:
+                    critique_text = f"Human feedback: {feedback}"
+                else:
+                    critique_text = history[-1]["critique"].raw_critique
+                prompt = build_refinement_prompt(
+                    session.task,
+                    session.context,
+                    current_output,
+                    critique_text
+                )
+
+            generation = ""
+            # Only include files in the first iteration (they provide initial context)
+            files_for_prompt = session.context_files if iteration == 0 else None
+            async for chunk in client.stream_completion(
+                prompt=prompt,
+                model=current_generator,  # Use rotated generator
+                temperature=config.temperature,
+                max_tokens=gen_max_tokens,
+                context_files=files_for_prompt
+            ):
+                generation += chunk
+                yield await emit(ReasoningEvent(
+                    type="generation_chunk",
+                    session_id=session.id,
+                    iteration=iteration,
+                    content=chunk
+                ))
+
+            yield await emit(ReasoningEvent(
+                type="generation_complete",
+                session_id=session.id,
+                iteration=iteration,
+                content=generation
+            ))
+
+            # CRITIQUE
+            yield await emit(ReasoningEvent(
+                type="critique_start",
+                session_id=session.id,
+                iteration=iteration
+            ))
+
+            critique_prompt = build_critic_prompt(
+                session.task,
+                generation,
+                config.criteria
+            )
+
+            critique_text = ""
+            async for chunk in client.stream_completion(
+                prompt=critique_prompt,
+                model=current_critic,  # Use rotated critic
+                temperature=0.3,  # Lower temperature for more consistent critique
+                max_tokens=2000
+            ):
+                critique_text += chunk
+                yield await emit(ReasoningEvent(
+                    type="critique_chunk",
+                    session_id=session.id,
+                    iteration=iteration,
+                    content=chunk
+                ))
+
+            # Parse critique for generate mode (critique mode already set it above)
+            critique = parse_critique(critique_text)
+
+            yield await emit(ReasoningEvent(
+                type="critique_complete",
+                session_id=session.id,
+                iteration=iteration,
+                score=critique.score,
+                critique=critique
+            ))
 
         # Create iteration record with the actual rotated models used
         iter_record = Iteration(
