@@ -40,7 +40,7 @@ function generateMarkdownExport(
   md += `## 🔄 Reasoning Process\n\n`;
 
   // Each iteration (filter out undefined entries from sparse arrays)
-  iterations.filter(Boolean).forEach((iteration, idx) => {
+  iterations.filter(Boolean).forEach((iteration) => {
     const iterLabel = iteration.number < 0 ? 'Council Phase' : `Iteration ${iteration.number + 1}`;
     md += `### ${iterLabel}\n\n`;
 
