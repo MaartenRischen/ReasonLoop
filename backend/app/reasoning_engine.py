@@ -204,38 +204,51 @@ async def reasoning_loop(
         logger.info("UltraThink mode: Running council phase")
         models = [config.generator_model, config.critic_model, config.refiner_model]
 
-        # Run the council (parallel queries + peer review + synthesis)
-        synthesized_response, council_data = await run_council(
-            task=session.task,
-            models=models,
-            config=config,
-            session_id=session.id,
-            on_event=on_event
-        )
+        try:
+            # Run the council (parallel queries + peer review + synthesis)
+            synthesized_response, council_data = await run_council(
+                task=session.task,
+                models=models,
+                config=config,
+                session_id=session.id,
+                on_event=on_event
+            )
 
-        # Emit council complete event
-        yield await emit(ReasoningEvent(
-            type="iteration_complete",
-            session_id=session.id,
-            iteration=-1,  # Council phase
-            content=synthesized_response,
-            score=None
-        ))
+            # Emit council complete event
+            yield await emit(ReasoningEvent(
+                type="iteration_complete",
+                session_id=session.id,
+                iteration=-1,  # Council phase
+                content=synthesized_response,
+                score=None
+            ))
 
-        # Use synthesized response as starting point for refinement
-        current_output = synthesized_response
+            # Use synthesized response as starting point for refinement
+            current_output = synthesized_response
 
-        # Create a council iteration record
-        council_iteration = Iteration(
-            number=-1,  # Indicates council phase
-            generation=synthesized_response,
-            generation_model="council",
-            critique=None,
-            critique_model=""
-        )
-        session.iterations.append(council_iteration)
+            # Create a council iteration record
+            council_iteration = Iteration(
+                number=-1,  # Indicates council phase
+                generation=synthesized_response,
+                generation_model="council",
+                critique=None,
+                critique_model=""
+            )
+            session.iterations.append(council_iteration)
 
-        logger.info("Council phase complete, starting refinement loop")
+            logger.info("Council phase complete, starting refinement loop")
+
+        except Exception as e:
+            logger.error(f"Council phase failed: {e}")
+            yield await emit(ReasoningEvent(
+                type="session_error",
+                session_id=session.id,
+                iteration=-1,
+                content=f"Council phase failed: {str(e)}"
+            ))
+            # Fall back to regular generate mode
+            logger.info("Falling back to regular generate mode")
+            config.mode = "generate"
 
     while iteration < config.max_iterations:
         # Check if we should stop

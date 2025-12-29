@@ -188,6 +188,8 @@ async def run_council(
     2. Peer review (each model evaluates others)
     3. Synthesis by top-ranked model
 
+    If any stage fails, returns a fallback response with error info.
+
     Returns: (synthesized_response, council_data)
     """
     client = get_client()
