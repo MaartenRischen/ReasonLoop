@@ -65,9 +65,9 @@ function App() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const estimatedTokens = iterations.reduce((acc, iter) => {
-    const genTokens = iter.generation ? Math.ceil(iter.generation.length / 4) : 0;
-    const critTokens = iter.critique?.raw_critique ? Math.ceil(iter.critique.raw_critique.length / 4) : 0;
+  const estimatedTokens = iterations.filter(Boolean).reduce((acc, iter) => {
+    const genTokens = iter?.generation ? Math.ceil(iter.generation.length / 4) : 0;
+    const critTokens = iter?.critique?.raw_critique ? Math.ceil(iter.critique.raw_critique.length / 4) : 0;
     return acc + genTokens + critTokens;
   }, 0);
 

@@ -39,14 +39,15 @@ function generateMarkdownExport(
   md += `---\n\n`;
   md += `## 🔄 Reasoning Process\n\n`;
 
-  // Each iteration
-  iterations.forEach((iteration, idx) => {
-    md += `### Iteration ${idx + 1}\n\n`;
+  // Each iteration (filter out undefined entries from sparse arrays)
+  iterations.filter(Boolean).forEach((iteration, idx) => {
+    const iterLabel = iteration.number < 0 ? 'Council Phase' : `Iteration ${iteration.number + 1}`;
+    md += `### ${iterLabel}\n\n`;
 
     // Generation
-    md += `#### 💡 Generation\n`;
+    md += `#### 💡 ${iteration.number < 0 ? 'Council Synthesis' : 'Generation'}\n`;
     md += `**Model:** ${formatModelName(iteration.generation_model)}\n\n`;
-    md += `${iteration.generation}\n\n`;
+    md += `${iteration.generation || ''}\n\n`;
 
     // Critique
     if (iteration.critique) {
@@ -337,11 +338,11 @@ ${context || 'None provided'}
 
       {/* Iterations List */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2">
-        {iterations.map((iteration, index) => (
+        {iterations.filter(Boolean).map((iteration, index, filteredArr) => (
           <IterationCard
             key={`${sessionId}-${iteration.number}`}
             iteration={iteration}
-            isLatest={index === iterations.length - 1 && status === 'running'}
+            isLatest={index === filteredArr.length - 1 && status === 'running'}
           />
         ))}
 

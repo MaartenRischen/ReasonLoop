@@ -90,7 +90,8 @@ export function SessionManager() {
 
       const store = useReasoningStore.getState();
       if (session.iterations && session.iterations.length > 0) {
-        session.iterations.forEach((iter: any, index: number) => {
+        // Filter out any undefined iterations and use sequential indices
+        session.iterations.filter(Boolean).forEach((iter: any, index: number) => {
           store.startGeneration(index);
           store.completeGeneration(iter.generation || '');
           if (iter.critique) {
@@ -121,14 +122,14 @@ ${context ? `## Context\n${context}\n` : ''}
 
 ## Iterations
 
-${iterations.map((iter, i) => `
+${iterations.filter(Boolean).map((iter, i) => `
 ### Iteration ${i + 1}
 
 **Generation:**
-${iter.generation}
+${iter?.generation || ''}
 
-**Critique:** (Score: ${iter.critique?.score?.toFixed(1) || 'N/A'}/10)
-${iter.critique?.raw_critique || 'No critique available'}
+**Critique:** (Score: ${iter?.critique?.score?.toFixed(1) || 'N/A'}/10)
+${iter?.critique?.raw_critique || 'No critique available'}
 `).join('\n---\n')}
 
 ## Final Output (Score: ${finalScore?.toFixed(1) || 'N/A'}/10)
@@ -154,10 +155,10 @@ ${finalOutput}
       task,
       context,
       config,
-      iterations: iterations.map(iter => ({
-        number: iter.number,
-        generation: iter.generation,
-        critique: iter.critique,
+      iterations: iterations.filter(Boolean).map(iter => ({
+        number: iter?.number,
+        generation: iter?.generation,
+        critique: iter?.critique,
       })),
       finalOutput,
       finalScore,
