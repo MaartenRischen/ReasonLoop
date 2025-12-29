@@ -22,6 +22,7 @@ from .prompts import (
     build_critique_only_followup
 )
 from .openrouter import get_client
+from .council import run_council
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +198,45 @@ async def reasoning_loop(
         iteration=0
     ))
 
+    # === ULTRATHINK MODE: Run council phase first ===
+    council_data = None
+    if config.mode == "ultrathink":
+        logger.info("UltraThink mode: Running council phase")
+        models = [config.generator_model, config.critic_model, config.refiner_model]
+
+        # Run the council (parallel queries + peer review + synthesis)
+        synthesized_response, council_data = await run_council(
+            task=session.task,
+            models=models,
+            config=config,
+            session_id=session.id,
+            on_event=on_event
+        )
+
+        # Emit council complete event
+        yield await emit(ReasoningEvent(
+            type="iteration_complete",
+            session_id=session.id,
+            iteration=-1,  # Council phase
+            content=synthesized_response,
+            score=None
+        ))
+
+        # Use synthesized response as starting point for refinement
+        current_output = synthesized_response
+
+        # Create a council iteration record
+        council_iteration = Iteration(
+            number=-1,  # Indicates council phase
+            generation=synthesized_response,
+            generation_model="council",
+            critique=None,
+            critique_model=""
+        )
+        session.iterations.append(council_iteration)
+
+        logger.info("Council phase complete, starting refinement loop")
+
     while iteration < config.max_iterations:
         # Check if we should stop
         if should_stop and should_stop():
@@ -287,53 +327,67 @@ async def reasoning_loop(
             # Don't emit critique_complete in critique mode - the generation IS the critique
 
         else:
-            # GENERATE MODE: Normal generate-critique-refine loop
-            yield await emit(ReasoningEvent(
-                type="generation_start",
-                session_id=session.id,
-                iteration=iteration
-            ))
-
-            if iteration == 0:
-                prompt = build_initial_prompt(session.task, session.context, config.output_length)
-            else:
-                # Use feedback if injected, otherwise use critique
-                if feedback:
-                    critique_text = f"Human feedback: {feedback}"
-                else:
-                    critique_text = history[-1]["critique"].raw_critique
-                prompt = build_refinement_prompt(
-                    session.task,
-                    session.context,
-                    current_output,
-                    critique_text,
-                    config.output_length
-                )
-
-            generation = ""
-            # Only include files in the first iteration (they provide initial context)
-            files_for_prompt = session.context_files if iteration == 0 else None
-            async for chunk in client.stream_completion(
-                prompt=prompt,
-                model=current_generator,  # Use rotated generator
-                temperature=config.temperature,
-                max_tokens=gen_max_tokens,
-                context_files=files_for_prompt
-            ):
-                generation += chunk
+            # GENERATE MODE (also handles UltraThink refinement)
+            # In UltraThink mode, iteration 0 uses the council's synthesized output
+            # and skips directly to critique
+            if config.mode == "ultrathink" and iteration == 0 and current_output:
+                # Skip generation - use council's synthesis
+                generation = current_output
+                logger.info("UltraThink: Using council synthesis, skipping to critique")
                 yield await emit(ReasoningEvent(
-                    type="generation_chunk",
+                    type="generation_complete",
                     session_id=session.id,
                     iteration=iteration,
-                    content=chunk
+                    content=generation
+                ))
+            else:
+                # Normal generate-critique-refine loop
+                yield await emit(ReasoningEvent(
+                    type="generation_start",
+                    session_id=session.id,
+                    iteration=iteration
                 ))
 
-            yield await emit(ReasoningEvent(
-                type="generation_complete",
-                session_id=session.id,
-                iteration=iteration,
-                content=generation
-            ))
+                if iteration == 0:
+                    prompt = build_initial_prompt(session.task, session.context, config.output_length)
+                else:
+                    # Use feedback if injected, otherwise use critique
+                    if feedback:
+                        critique_text = f"Human feedback: {feedback}"
+                    else:
+                        critique_text = history[-1]["critique"].raw_critique
+                    prompt = build_refinement_prompt(
+                        session.task,
+                        session.context,
+                        current_output,
+                        critique_text,
+                        config.output_length
+                    )
+
+                generation = ""
+                # Only include files in the first iteration (they provide initial context)
+                files_for_prompt = session.context_files if iteration == 0 else None
+                async for chunk in client.stream_completion(
+                    prompt=prompt,
+                    model=current_generator,  # Use rotated generator
+                    temperature=config.temperature,
+                    max_tokens=gen_max_tokens,
+                    context_files=files_for_prompt
+                ):
+                    generation += chunk
+                    yield await emit(ReasoningEvent(
+                        type="generation_chunk",
+                        session_id=session.id,
+                        iteration=iteration,
+                        content=chunk
+                    ))
+
+                yield await emit(ReasoningEvent(
+                    type="generation_complete",
+                    session_id=session.id,
+                    iteration=iteration,
+                    content=generation
+                ))
 
             # CRITIQUE
             yield await emit(ReasoningEvent(

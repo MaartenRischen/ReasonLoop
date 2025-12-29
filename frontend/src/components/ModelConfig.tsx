@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Zap, Scale, Sparkles, DollarSign, Loader2, Search, Star, Wand2, Brain, Settings2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap, Scale, Sparkles, DollarSign, Loader2, Search, Star, Wand2, Brain, Settings2, Rocket } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
 import { API_BASE } from '../lib/api';
 
@@ -464,7 +464,7 @@ export function ModelConfig() {
           {/* Mode Selector */}
           <div>
             <label className="block text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Mode</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => { setActivePreset(null); setConfig({ mode: 'generate' }); }}
                 disabled={isDisabled}
@@ -476,10 +476,10 @@ export function ModelConfig() {
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
-                <div className={`text-sm font-semibold ${config.mode === 'generate' ? 'text-teal' : 'text-text-secondary'}`}>
+                <div className={`text-xs font-semibold ${config.mode === 'generate' ? 'text-teal' : 'text-text-secondary'}`}>
                   Generate & Refine
                 </div>
-                <p className="text-[10px] text-text-muted mt-1">Create and iteratively improve content</p>
+                <p className="text-[9px] text-text-muted mt-1">Create & improve</p>
               </button>
               <button
                 onClick={() => { setActivePreset(null); setConfig({ mode: 'critique' }); }}
@@ -492,12 +492,34 @@ export function ModelConfig() {
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
-                <div className={`text-sm font-semibold ${config.mode === 'critique' ? 'text-violet' : 'text-text-secondary'}`}>
+                <div className={`text-xs font-semibold ${config.mode === 'critique' ? 'text-violet' : 'text-text-secondary'}`}>
                   Critique Only
                 </div>
-                <p className="text-[10px] text-text-muted mt-1">Analyze without rewriting</p>
+                <p className="text-[9px] text-text-muted mt-1">Analyze, don't rewrite</p>
+              </button>
+              <button
+                onClick={() => { setActivePreset(null); setConfig({ mode: 'ultrathink' }); }}
+                disabled={isDisabled}
+                className={`
+                  p-3 rounded-xl border text-left transition-all
+                  ${config.mode === 'ultrathink'
+                    ? 'bg-rose/10 border-rose/30 ring-1 ring-offset-1 ring-offset-background ring-rose/30'
+                    : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                <div className={`text-xs font-semibold flex items-center gap-1 ${config.mode === 'ultrathink' ? 'text-rose' : 'text-text-secondary'}`}>
+                  <Rocket className="w-3 h-3" />
+                  UltraThink
+                </div>
+                <p className="text-[9px] text-text-muted mt-1">Council + Refine</p>
               </button>
             </div>
+            {config.mode === 'ultrathink' && (
+              <p className="text-[10px] text-rose/80 mt-2 px-1">
+                All 3 models answer → peer review → synthesize → refine loop
+              </p>
+            )}
           </div>
 
           {/* Model Selects */}

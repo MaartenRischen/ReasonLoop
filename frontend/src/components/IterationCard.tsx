@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Loader2, Check, AlertTriangle, Lightbulb, Sparkles, Bot } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Check, AlertTriangle, Lightbulb, Sparkles, Bot, Users } from 'lucide-react';
 import type { Iteration } from '../stores/reasoningStore';
 
 // Helper to format model name for display
@@ -59,18 +59,35 @@ export function IterationCard({ iteration, isLatest }: IterationCardProps) {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             {/* Iteration badge */}
-            <div className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg
-              ${isLatest
-                ? 'bg-amber/10 border border-amber/20'
-                : 'bg-background-elevated border border-border-subtle'
-              }
-            `}>
-              <Sparkles className={`w-3.5 h-3.5 ${isLatest ? 'text-amber' : 'text-text-muted'}`} />
-              <span className={`font-mono text-sm font-semibold ${isLatest ? 'text-amber' : 'text-text-secondary'}`}>
-                #{iteration.number + 1}
-              </span>
-            </div>
+            {iteration.number < 0 ? (
+              // Council phase badge
+              <div className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg
+                ${isLatest
+                  ? 'bg-rose/10 border border-rose/20'
+                  : 'bg-background-elevated border border-border-subtle'
+                }
+              `}>
+                <Users className={`w-3.5 h-3.5 ${isLatest ? 'text-rose' : 'text-text-muted'}`} />
+                <span className={`text-sm font-semibold ${isLatest ? 'text-rose' : 'text-text-secondary'}`}>
+                  Council
+                </span>
+              </div>
+            ) : (
+              // Normal iteration badge
+              <div className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg
+                ${isLatest
+                  ? 'bg-amber/10 border border-amber/20'
+                  : 'bg-background-elevated border border-border-subtle'
+                }
+              `}>
+                <Sparkles className={`w-3.5 h-3.5 ${isLatest ? 'text-amber' : 'text-text-muted'}`} />
+                <span className={`font-mono text-sm font-semibold ${isLatest ? 'text-amber' : 'text-text-secondary'}`}>
+                  #{iteration.number + 1}
+                </span>
+              </div>
+            )}
 
             {/* Status indicators */}
             {iteration.isGenerating && (
@@ -113,7 +130,7 @@ export function IterationCard({ iteration, isLatest }: IterationCardProps) {
               )}
             </div>
             <span className="text-sm font-medium text-text-secondary group-hover:text-text-primary transition-colors">
-              Generation
+              {iteration.number < 0 ? 'Council Synthesis' : 'Generation'}
             </span>
             {iteration.generation_model && (
               <span className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md bg-amber/10 border border-amber/20">
