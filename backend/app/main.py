@@ -229,7 +229,7 @@ async def start_reasoning(request: ReasoningRequest):
         config=config
     )
     sessions[session.id] = session
-    session_controls[session.id] = {"stop": False, "feedback": None}
+    session_controls[session.id] = {"stop": False, "paused": False, "feedback": None}
     return {"session_id": session.id, "status": "created"}
 
 
@@ -263,6 +263,32 @@ async def stop_session(session_id: str):
         session_controls[session_id]["stop"] = True
     sessions[session_id].status = "stopped"
     return {"status": "stopped"}
+
+
+@app.post("/api/reasoning/{session_id}/pause")
+async def pause_session(session_id: str):
+    """Pause an active reasoning session."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if sessions[session_id].status != "running":
+        raise HTTPException(status_code=400, detail="Session is not running")
+    if session_id in session_controls:
+        session_controls[session_id]["paused"] = True
+    sessions[session_id].status = "paused"
+    return {"status": "paused"}
+
+
+@app.post("/api/reasoning/{session_id}/resume")
+async def resume_session(session_id: str):
+    """Resume a paused reasoning session."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if sessions[session_id].status != "paused":
+        raise HTTPException(status_code=400, detail="Session is not paused")
+    if session_id in session_controls:
+        session_controls[session_id]["paused"] = False
+    sessions[session_id].status = "running"
+    return {"status": "running"}
 
 
 @app.post("/api/reasoning/{session_id}/retry")
@@ -526,7 +552,7 @@ async def websocket_reasoning(websocket: WebSocket, session_id: str):
     active_websockets[session_id].append(websocket)
 
     session = sessions[session_id]
-    controls = session_controls.get(session_id, {"stop": False, "feedback": None})
+    controls = session_controls.get(session_id, {"stop": False, "paused": False, "feedback": None})
 
     async def send_event(event: ReasoningEvent):
         """Send event to all connected websockets for this session."""
@@ -540,6 +566,9 @@ async def websocket_reasoning(websocket: WebSocket, session_id: str):
     def should_stop():
         return controls.get("stop", False)
 
+    def is_paused():
+        return controls.get("paused", False)
+
     def get_feedback():
         feedback = controls.get("feedback")
         if feedback:
@@ -552,6 +581,7 @@ async def websocket_reasoning(websocket: WebSocket, session_id: str):
             session=session,
             on_event=send_event,
             should_stop=should_stop,
+            is_paused=is_paused,
             injected_feedback=get_feedback
         ):
             # Event already sent via on_event callback

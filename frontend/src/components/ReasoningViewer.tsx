@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Check, RotateCcw, Square, Loader2, MessageSquare, Send, X, PenLine, Sparkles, Trophy, Download } from 'lucide-react';
+import { Copy, Check, RotateCcw, Square, Loader2, MessageSquare, Send, X, PenLine, Sparkles, Trophy, Download, Pause, Play, WifiOff } from 'lucide-react';
 import { useReasoningStore } from '../stores/reasoningStore';
 import { useReasoningWebSocket } from '../hooks/useWebSocket';
-import { stopReasoning, startReasoning, injectFeedback } from '../lib/api';
+import { stopReasoning, startReasoning, injectFeedback, pauseReasoning, resumeReasoning } from '../lib/api';
 import { IterationCard } from './IterationCard';
 import type { Iteration } from '../stores/reasoningStore';
 
@@ -135,7 +135,45 @@ export function ReasoningViewer() {
   const [injectText, setInjectText] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const [isInjecting, setIsInjecting] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Network connectivity detection - auto pause/resume
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      // Auto-resume if was paused due to network
+      if (sessionId && status === 'paused') {
+        try {
+          await resumeReasoning(sessionId);
+          setStatus('running');
+        } catch (err) {
+          console.error('Failed to auto-resume:', err);
+        }
+      }
+    };
+
+    const handleOffline = async () => {
+      setIsOnline(false);
+      // Auto-pause if running
+      if (sessionId && status === 'running') {
+        try {
+          await pauseReasoning(sessionId);
+          setStatus('paused');
+        } catch (err) {
+          console.error('Failed to auto-pause:', err);
+        }
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [sessionId, status, setStatus]);
 
   const shouldConnectWs = needsWebSocket && (status === 'idle' || status === 'running');
   useReasoningWebSocket(sessionId, shouldConnectWs);
@@ -175,6 +213,30 @@ export function ReasoningViewer() {
         await stopReasoning(sessionId);
       } catch (err) {
         console.error('Failed to stop session:', err);
+      }
+    }
+  };
+
+  const handlePause = async () => {
+    if (sessionId) {
+      setStatus('paused');
+      try {
+        await pauseReasoning(sessionId);
+      } catch (err) {
+        console.error('Failed to pause session:', err);
+        setStatus('running'); // Revert on error
+      }
+    }
+  };
+
+  const handleResume = async () => {
+    if (sessionId) {
+      setStatus('running');
+      try {
+        await resumeReasoning(sessionId);
+      } catch (err) {
+        console.error('Failed to resume session:', err);
+        setStatus('paused'); // Revert on error
       }
     }
   };
@@ -312,6 +374,14 @@ ${context || 'None provided'}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Network status indicator */}
+          {!isOnline && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose/10 border border-rose/20 text-rose text-sm">
+              <WifiOff className="w-4 h-4" />
+              Offline
+            </div>
+          )}
+
           {status === 'running' && (
             <>
               <button
@@ -321,6 +391,31 @@ ${context || 'None provided'}
               >
                 <PenLine className="w-4 h-4" />
                 Inject
+              </button>
+              <button
+                onClick={handlePause}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet/10 border border-violet/20 text-violet text-sm font-medium hover:bg-violet/15 transition-colors"
+              >
+                <Pause className="w-4 h-4" />
+                Pause
+              </button>
+              <button
+                onClick={handleStop}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose/10 border border-rose/20 text-rose text-sm font-medium hover:bg-rose/15 transition-colors"
+              >
+                <Square className="w-4 h-4" />
+                Stop
+              </button>
+            </>
+          )}
+          {status === 'paused' && (
+            <>
+              <button
+                onClick={handleResume}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-teal/10 border border-teal/20 text-teal text-sm font-medium hover:bg-teal/15 transition-colors"
+              >
+                <Play className="w-4 h-4" />
+                Resume
               </button>
               <button
                 onClick={handleStop}
@@ -362,6 +457,18 @@ ${context || 'None provided'}
               </div>
               <span className="text-text-secondary font-medium">
                 {isRetrying ? 'Retrying with new approach...' : 'Initializing reasoning session...'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Paused indicator */}
+        {status === 'paused' && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet/10 border border-violet/20">
+              <Pause className="w-5 h-5 text-violet" />
+              <span className="text-violet font-medium">
+                {!isOnline ? 'Paused (offline) - will resume when connection restored' : 'Paused - click Resume to continue'}
               </span>
             </div>
           </div>

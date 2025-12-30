@@ -94,6 +94,14 @@ export function useReasoningWebSocket(sessionId: string | null, shouldConnect: b
             isIntentionalCloseRef.current = true;
             break;
 
+          case 'session_paused':
+            currentStore.setStatus('paused');
+            break;
+
+          case 'session_resumed':
+            currentStore.setStatus('running');
+            break;
+
           case 'session_error':
             console.error('Session error:', data.content);
             currentStore.setStatus('error');

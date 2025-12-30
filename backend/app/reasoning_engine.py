@@ -164,6 +164,7 @@ async def reasoning_loop(
     session: Session,
     on_event: Optional[Callable[[ReasoningEvent], Awaitable[None]]] = None,
     should_stop: Optional[Callable[[], bool]] = None,
+    is_paused: Optional[Callable[[], bool]] = None,
     injected_feedback: Optional[Callable[[], Optional[str]]] = None
 ) -> AsyncGenerator[ReasoningEvent, None]:
     """
@@ -173,11 +174,22 @@ async def reasoning_loop(
         session: The reasoning session
         on_event: Optional callback for each event
         should_stop: Optional callback to check if we should stop
+        is_paused: Optional callback to check if we should pause
         injected_feedback: Optional callback to get injected human feedback
 
     Yields:
         ReasoningEvent objects for each step
     """
+    import asyncio
+
+    async def wait_while_paused():
+        """Wait while the session is paused, checking every 500ms."""
+        while is_paused and is_paused():
+            await asyncio.sleep(0.5)
+            # Check if we should stop while paused
+            if should_stop and should_stop():
+                return False  # Signal to stop
+        return True  # Signal to continue
     client = get_client()
     config = session.config
     iteration = 0
@@ -266,6 +278,17 @@ async def reasoning_loop(
     while iteration < config.max_iterations:
         # Check if we should stop
         if should_stop and should_stop():
+            yield await emit(ReasoningEvent(
+                type="session_stopped",
+                session_id=session.id,
+                iteration=iteration,
+                content=current_output
+            ))
+            return
+
+        # Wait while paused
+        if not await wait_while_paused():
+            # Stopped while paused
             yield await emit(ReasoningEvent(
                 type="session_stopped",
                 session_id=session.id,

@@ -58,6 +58,24 @@ export async function stopReasoning(sessionId: string): Promise<void> {
   }
 }
 
+export async function pauseReasoning(sessionId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/reasoning/${sessionId}/pause`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to pause reasoning: ${response.statusText}`);
+  }
+}
+
+export async function resumeReasoning(sessionId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/reasoning/${sessionId}/resume`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to resume reasoning: ${response.statusText}`);
+  }
+}
+
 export async function retryReasoning(sessionId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/reasoning/${sessionId}/retry`, {
     method: 'POST',

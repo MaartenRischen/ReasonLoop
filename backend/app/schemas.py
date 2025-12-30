@@ -79,6 +79,7 @@ class ReasoningEvent(BaseModel):
         "session_complete",
         "session_error",
         "session_paused",
+        "session_resumed",
         "session_stopped"
     ]
     session_id: str
