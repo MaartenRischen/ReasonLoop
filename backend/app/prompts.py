@@ -1,9 +1,10 @@
 """Prompt templates for the reasoning engine."""
 
 # Length instructions based on output_length setting
+# These guide the model to produce complete responses of the target length
 LENGTH_INSTRUCTIONS = {
-    "short": "IMPORTANT: Keep your response BRIEF and CONCISE. Aim for ~500 words maximum. Be direct, skip preamble, focus only on the most essential points.",
-    "medium": "Keep your response focused and well-structured. Aim for ~1500-2000 words. Cover key points thoroughly but avoid unnecessary elaboration.",
+    "short": "LENGTH REQUIREMENT: Keep your response BRIEF and CONCISE (~500 words max). Be direct, skip preamble, focus only on the most essential points. Provide a COMPLETE response within this limit - do not leave thoughts unfinished.",
+    "medium": "LENGTH REQUIREMENT: Keep your response focused and well-structured (~1500-2000 words). Cover key points thoroughly but avoid unnecessary elaboration. Ensure your response is COMPLETE and reaches a proper conclusion.",
     "long": "Provide a comprehensive, detailed response. Be thorough and explore the topic fully."
 }
 

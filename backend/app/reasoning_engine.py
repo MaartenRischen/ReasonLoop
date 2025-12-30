@@ -11,7 +11,6 @@ from .schemas import (
     CritiqueResult,
     Iteration,
     Session,
-    OUTPUT_LENGTH_TOKENS
 )
 from .prompts import (
     build_initial_prompt,
@@ -284,8 +283,10 @@ async def reasoning_loop(
         current_generator, current_critic = get_rotated_models(config, iteration)
         logger.info(f"Iteration {iteration}: Generator={current_generator}, Critic={current_critic}, Mode={config.mode}")
 
-        # Use output_length setting to determine max tokens
-        gen_max_tokens = OUTPUT_LENGTH_TOKENS.get(config.output_length, config.max_tokens)
+        # Don't use max_tokens for length control - it causes hard cutoffs
+        # Instead, rely on LENGTH_INSTRUCTIONS in the prompt to guide the model
+        # max_tokens is just a safety limit to prevent runaway generation
+        gen_max_tokens = config.max_tokens  # Always use full configured limit
 
         if config.mode == "critique":
             # CRITIQUE-ONLY MODE: Analyze the provided content without rewriting
