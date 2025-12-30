@@ -70,7 +70,8 @@ async def query_models_parallel(
     models: list[str],
     temperature: float = 0.7,
     max_tokens: int = 4000,
-    on_response: Optional[Callable[[str, str], Awaitable[None]]] = None
+    on_response: Optional[Callable[[str, str], Awaitable[None]]] = None,
+    timeout: float = 120.0  # 2 minute timeout per model
 ) -> dict[str, str]:
     """Query multiple models in parallel and return their responses."""
     client = get_client()
@@ -94,8 +95,15 @@ async def query_models_parallel(
             logger.error(f"Error querying {model}: {e}")
             return model, f"[Error: {str(e)}]"
 
-    # Query all models in parallel
-    tasks = [query_single(model) for model in models]
+    async def query_with_timeout(model: str) -> tuple[str, str]:
+        try:
+            return await asyncio.wait_for(query_single(model), timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout querying {model} after {timeout}s")
+            return model, f"[Timeout after {timeout}s]"
+
+    # Query all models in parallel with timeout
+    tasks = [query_with_timeout(model) for model in models]
     results = await asyncio.gather(*tasks)
 
     return {model: response for model, response in results}

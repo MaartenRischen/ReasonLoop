@@ -169,7 +169,13 @@ export function ReasoningViewer() {
 
   const handleStop = async () => {
     if (sessionId) {
-      await stopReasoning(sessionId);
+      // Immediately update UI state
+      setStatus('stopped');
+      try {
+        await stopReasoning(sessionId);
+      } catch (err) {
+        console.error('Failed to stop session:', err);
+      }
     }
   };
 

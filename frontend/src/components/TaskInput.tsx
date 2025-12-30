@@ -20,9 +20,13 @@ export function TaskInput() {
         context_files: contextFiles.length > 0 ? contextFiles : undefined,
         config,
       });
+      // Set session ID and immediately set status to running
+      // (WebSocket will confirm with session_started event)
       setSessionId(response.session_id, true);
+      useReasoningStore.getState().setStatus('running');
     } catch (err) {
       console.error('Failed to start reasoning:', err);
+      useReasoningStore.getState().setStatus('error');
     } finally {
       setIsSubmitting(false);
     }
