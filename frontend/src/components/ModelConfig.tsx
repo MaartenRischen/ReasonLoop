@@ -463,8 +463,8 @@ export function ModelConfig() {
 
           {/* Mode Selector */}
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Mode</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="block text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Reasoning Mode</label>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => { setActivePreset(null); setConfig({ mode: 'generate' }); }}
                 disabled={isDisabled}
@@ -477,25 +477,25 @@ export function ModelConfig() {
                 `}
               >
                 <div className={`text-xs font-semibold ${config.mode === 'generate' ? 'text-teal' : 'text-text-secondary'}`}>
-                  Generate & Refine
+                  ReasonLoop
                 </div>
-                <p className="text-[9px] text-text-muted mt-1">Create & improve</p>
+                <p className="text-[9px] text-text-muted mt-1">Generate → Critique → Refine loop</p>
               </button>
               <button
-                onClick={() => { setActivePreset(null); setConfig({ mode: 'critique' }); }}
+                onClick={() => { setActivePreset(null); setConfig({ mode: 'council' }); }}
                 disabled={isDisabled}
                 className={`
                   p-3 rounded-xl border text-left transition-all
-                  ${config.mode === 'critique'
+                  ${config.mode === 'council'
                     ? 'bg-violet/10 border-violet/30 ring-1 ring-offset-1 ring-offset-background ring-violet/30'
                     : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
-                <div className={`text-xs font-semibold ${config.mode === 'critique' ? 'text-violet' : 'text-text-secondary'}`}>
-                  Critique Only
+                <div className={`text-xs font-semibold ${config.mode === 'council' ? 'text-violet' : 'text-text-secondary'}`}>
+                  Council
                 </div>
-                <p className="text-[9px] text-text-muted mt-1">Analyze, don't rewrite</p>
+                <p className="text-[9px] text-text-muted mt-1">3 models vote → synthesize (fast)</p>
               </button>
               <button
                 onClick={() => { setActivePreset(null); setConfig({ mode: 'ultrathink' }); }}
@@ -503,23 +503,34 @@ export function ModelConfig() {
                 className={`
                   p-3 rounded-xl border text-left transition-all
                   ${config.mode === 'ultrathink'
+                    ? 'bg-amber/10 border-amber/30 ring-1 ring-offset-1 ring-offset-background ring-amber/30'
+                    : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                <div className={`text-xs font-semibold flex items-center gap-1 ${config.mode === 'ultrathink' ? 'text-amber' : 'text-text-secondary'}`}>
+                  <Rocket className="w-3 h-3" />
+                  UltraThink
+                </div>
+                <p className="text-[9px] text-text-muted mt-1">Council + ReasonLoop (best)</p>
+              </button>
+              <button
+                onClick={() => { setActivePreset(null); setConfig({ mode: 'critique' }); }}
+                disabled={isDisabled}
+                className={`
+                  p-3 rounded-xl border text-left transition-all
+                  ${config.mode === 'critique'
                     ? 'bg-rose/10 border-rose/30 ring-1 ring-offset-1 ring-offset-background ring-rose/30'
                     : 'bg-background-tertiary/50 border-border-subtle hover:border-border-medium'}
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
-                <div className={`text-xs font-semibold flex items-center gap-1 ${config.mode === 'ultrathink' ? 'text-rose' : 'text-text-secondary'}`}>
-                  <Rocket className="w-3 h-3" />
-                  UltraThink
+                <div className={`text-xs font-semibold ${config.mode === 'critique' ? 'text-rose' : 'text-text-secondary'}`}>
+                  Critique Only
                 </div>
-                <p className="text-[9px] text-text-muted mt-1">Council + Refine</p>
+                <p className="text-[9px] text-text-muted mt-1">Analyze without rewriting</p>
               </button>
             </div>
-            {config.mode === 'ultrathink' && (
-              <p className="text-[10px] text-rose/80 mt-2 px-1">
-                All 3 models answer → peer review → synthesize → refine loop
-              </p>
-            )}
           </div>
 
           {/* Model Selects */}

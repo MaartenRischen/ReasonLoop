@@ -7,10 +7,6 @@ import { SessionManager } from './components/SessionManager';
 import { ContextUpload } from './components/ContextUpload';
 import { ApiKeysSettings } from './components/ApiKeysSettings';
 import { ModelLeaderboard } from './components/ModelLeaderboard';
-import { ModeSelector } from './components/ModeSelector';
-import { ProcessVisualizer } from './components/ProcessVisualizer';
-import { FeedbackInjector } from './components/FeedbackInjector';
-import { ControlPanel } from './components/ControlPanel';
 import { useReasoningStore } from './stores/reasoningStore';
 import { healthCheck } from './lib/api';
 
@@ -172,46 +168,31 @@ function App() {
               <TaskInput />
             </div>
 
-            {/* Mode Selection - Most Important */}
-            <div className="card p-5 animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
-              <ModeSelector />
-            </div>
-
             {/* Collapsible Sections */}
-            <div className="space-y-3 animate-fade-in-up stagger-2" style={{ opacity: 0 }}>
+            <div className="space-y-3 animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
               <ContextUpload />
             </div>
 
-            <div className="space-y-3 animate-fade-in-up stagger-3" style={{ opacity: 0 }}>
+            <div className="space-y-3 animate-fade-in-up stagger-2" style={{ opacity: 0 }}>
               <ModelConfig />
             </div>
 
-            {/* Quality Controls */}
-            <div className="card p-5 animate-fade-in-up stagger-4" style={{ opacity: 0 }}>
-              <ControlPanel />
-            </div>
-
-            <div className="space-y-3 animate-fade-in-up stagger-5" style={{ opacity: 0 }}>
+            <div className="space-y-3 animate-fade-in-up stagger-3" style={{ opacity: 0 }}>
               <ApiKeysSettings />
             </div>
 
-            <div className="space-y-3 animate-fade-in-up stagger-6" style={{ opacity: 0 }}>
+            <div className="space-y-3 animate-fade-in-up stagger-4" style={{ opacity: 0 }}>
               <ModelLeaderboard />
             </div>
 
-            <div className="space-y-3 animate-fade-in-up stagger-7" style={{ opacity: 0 }}>
+            <div className="space-y-3 animate-fade-in-up stagger-5" style={{ opacity: 0 }}>
               <SessionManager />
             </div>
           </div>
 
           {/* Main Content - Reasoning Viewer */}
-          <div className="lg:col-span-8 xl:col-span-8 space-y-4 animate-fade-in-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
-            {/* Process Visualizer - Shows current phase */}
-            {(status === 'running' || status === 'completed') && (
-              <ProcessVisualizer />
-            )}
-
-            <div className="card p-6 min-h-[600px] flex flex-col relative overflow-hidden">
+          <div className="lg:col-span-8 xl:col-span-8 animate-fade-in-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
+            <div className="card p-6 min-h-[700px] flex flex-col relative overflow-hidden">
               {/* Decorative corner gradient */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber/5 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-teal/5 to-transparent pointer-events-none" />
@@ -338,8 +319,6 @@ function App() {
         </footer>
       )}
 
-      {/* Floating Feedback Injector - Shows when running */}
-      <FeedbackInjector />
     </div>
   );
 }
