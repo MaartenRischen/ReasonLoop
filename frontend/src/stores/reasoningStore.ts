@@ -27,7 +27,7 @@ export interface ReasoningConfig {
   max_iterations: number;
   score_threshold: number;
   output_length: 'short' | 'medium' | 'long';
-  mode: 'generate' | 'critique' | 'ultrathink';
+  mode: 'generate' | 'critique' | 'council' | 'ultrathink';
 }
 
 export type SessionStatus = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';

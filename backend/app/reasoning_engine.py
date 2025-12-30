@@ -198,10 +198,10 @@ async def reasoning_loop(
         iteration=0
     ))
 
-    # === ULTRATHINK MODE: Run council phase first ===
+    # === COUNCIL OR ULTRATHINK MODE: Run council phase ===
     council_data = None
-    if config.mode == "ultrathink":
-        logger.info("UltraThink mode: Running council phase")
+    if config.mode in ("council", "ultrathink"):
+        logger.info(f"{config.mode.capitalize()} mode: Running council phase")
         models = [config.generator_model, config.critic_model, config.refiner_model]
 
         try:
@@ -223,9 +223,6 @@ async def reasoning_loop(
                 score=None
             ))
 
-            # Use synthesized response as starting point for refinement
-            current_output = synthesized_response
-
             # Create a council iteration record
             council_iteration = Iteration(
                 number=-1,  # Indicates council phase
@@ -236,6 +233,23 @@ async def reasoning_loop(
             )
             session.iterations.append(council_iteration)
 
+            # For council-only mode, we're done - complete the session
+            if config.mode == "council":
+                logger.info("Council mode complete - no refinement loop")
+                session.final_output = synthesized_response
+                session.final_score = 8.0  # Council doesn't have scores
+                session.status = "completed"
+                yield await emit(ReasoningEvent(
+                    type="session_complete",
+                    session_id=session.id,
+                    iteration=-1,
+                    content=synthesized_response,
+                    score=8.0
+                ))
+                return
+
+            # For ultrathink, continue to refinement
+            current_output = synthesized_response
             logger.info("Council phase complete, starting refinement loop")
 
         except Exception as e:
